@@ -2,17 +2,43 @@ import sys
 sys.path.insert(0,'../util')
 from abutil import Infix
 
+#hyperparameters (to be tuned)
+delete_cost = 1.0
+insert_cost = 6.0
+mediod_cost = 20.0
+
 @Infix
-def dif(L, R):
-    return filter(lambda x: x not in R, L)
+def sub(L, r):
+    return filter(lambda x: x != r, L)
+
 
 def distance(source, target):
-    return 0
- 
+    def distance_dp(source, target, D):
+        (s,t) = (len(source),len(target))
+        if (s,t) in D:
+            return D[(s, t)]
+        if (s,t) == (0,0): 
+            D[(s,t)] = 0.0
+            return 0.0
+        if s == 0: 
+            D[(s,t)] = insert_cost * t
+            return insert_cost * t
+        if t == 0: 
+            D[(s,t)] = delete_cost * s
+            return delete_cost * s
+        if source[0] == target[0]:
+            return distance_dp(source[1:], target[1:], D)
+        rs = distance_dp(source[1:], target, D) + delete_cost
+        rt = distance_dp(source, target[1:], D) + insert_cost
+        v = min(rs,rt)
+        D[(s,t)] = v
+        return v
+    return distance_dp(source, target, {})
+
 def argmin(L, f):
-    min_val = None
-    min_cost = float('inf')
-    for i in L:
+    min_val = L[0]
+    min_cost = f(L[0]) 
+    for i in L[1:]:
         cost = f(i)
         if cost <= min_cost:
             min_val = i
@@ -28,10 +54,10 @@ def cluster_mediods(L):
     done = False
     while not done:
         done = True
-        for (wordlist, position) in zip(L,len(L)):
-            (m, cost) = argmin(candidates |dif| wordlist, lambda x: distance(wordlist, x))
-            if lone_cost < cost:
-                labels = map(lambda s: m if s == wordlist else s, labels)
-                candidates = candidates |dif| wordlist
-                done = False
+        (wordlist, (cost, m)) = argmin(candidates, lambda wl: (lambda (x,y):(y,x))(argmin(candidates |sub| wl, lambda x: distance(wl, x))))
+        if cost<mediod_cost:
+            labels = map(lambda s: m if s == wordlist else s, labels)
+            candidates = candidates |sub| wordlist
+            done = len(candidates)<=1
     return zip(L, labels)
+
