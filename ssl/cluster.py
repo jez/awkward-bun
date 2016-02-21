@@ -1,11 +1,7 @@
 import sys
 sys.path.insert(0,'../util')
 from abutil import Infix
-
-#hyperparameters (to be tuned)
-delete_cost = 1.0
-insert_cost = 6.0
-mediod_cost = 20.0
+from hyperparameters import insert_cost, delete_cost, mediod_cost
 
 @Infix
 def sub(L, r):
