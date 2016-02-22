@@ -47,7 +47,7 @@ def cluster_mediods(L):
     L = L[:] #this shizz is functional (looking) yo
     candidates = L
     labels = L[:]
-    done = False
+    done = len(L)<2
     while not done:
         done = True
         (wordlist, (cost, m)) = argmin(candidates, lambda wl: (lambda (x,y):(y,x))(argmin(candidates |sub| wl, lambda x: distance(wl, x))))
