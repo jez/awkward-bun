@@ -19,7 +19,7 @@ After you're relaunched your shell, run this to create a virtualenv for our
 project:
 
 ```console
-$ mkvirtualenv --python=$(which python3) awkward-bun
+$ mkvirtualenv awkward-bun
 ```
 
 You'll be placed into a Python virtual environment for our project, named
