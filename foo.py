@@ -19,12 +19,13 @@ import nltk
 from nltk.parse import stanford
 
 import io
+import codecs
 
 
 # pattern.en y u no python3 :<
 #with open('./data/set1/a1.txt') as f:
 #    sentences = nltk.sent_tokenize(f.read())
-with io.open('./data/set1/a1.txt') as f:
+with codecs.open('./data/set1/a1.txt', encoding='utf-8') as f:
     sentences = nltk.sent_tokenize(f.read())
 
 #print('\n'.join(sentences[:10]))
