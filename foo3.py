@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # This file is just a playground for some code that uses the Stanford Parser
@@ -11,26 +11,19 @@
 # and see some simple predicate sentence trees.
 #
 
-from __future__ import print_function
-
 import settings
 
 import nltk
 from nltk.parse import stanford
 
-import io
 
-
-# pattern.en y u no python3 :<
-#with open('./data/set1/a1.txt') as f:
-#    sentences = nltk.sent_tokenize(f.read())
-with io.open('./data/set1/a1.txt') as f:
+with open('./data/set1/a1.txt') as f:
     sentences = nltk.sent_tokenize(f.read())
 
 #print('\n'.join(sentences[:10]))
 # TODO: restrict length of sentences and number of sentences to meet time bounds
 
-parser = stanford.StanfordParser()
+parser = stanford.StanfordParser(model_path="edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz")
 parses = parser.raw_parse_sents(sentences[:10])
 trees = [next(tree) for tree in parses]
 
@@ -42,11 +35,6 @@ def simple_pred(node):
             node[0][0].label() == 'NP' and \
             node[0][1].label() == 'VP' and \
             node[0][2].label() == '.'
-
-# TODO this is not finished
-def has_auxiliary_verb(node):
-    return node.label() == 'VP' and \
-            False
 
 for tree in trees:
     for subtree in tree.subtrees(filter = simple_pred):
