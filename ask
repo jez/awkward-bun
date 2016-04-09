@@ -1,0 +1,110 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import sys
+import codecs
+
+# this module should be imported before using any NLTK or Stanford Parser code,
+# as it initializes these with their support folders.
+import settings as s
+
+import grammar_util as g
+import util
+from contractions import expand_contractions
+
+import nltk
+from nltk.tree import Tree
+from nltk.parse import stanford
+from pattern.en import conjugate
+
+
+def try_make_binary_question(node):
+    pred = g.get_predicate(node)
+
+    verb_node = next(t for t in pred if g.is_verb_node(t))
+    verb_idx = pred.index(verb_node)
+    if g.is_leaf(verb_node):
+        verb_str = ' '.join(verb_node)
+        verb_inf = conjugate(verb_str, 'VB')
+    else:
+        g.log_error(node, "Thought verb was terminal, but it wasn't: %s" % `verb_node`)
+        return None
+
+    if len(filter(g.is_verb_node, pred)) == 1 and verb_inf != 'be':
+        verb_pos = verb_node.label()
+        new_pred = pred[:]
+        new_pred[verb_idx] = Tree('VB', [verb_inf])
+        return Tree('ROOT', [Tree('SQ', [
+                Tree(verb_pos, [conjugate('do', verb_pos)]),
+                g.get_subject(node)
+                ] +
+                new_pred +
+                [Tree('.', ['?'])]
+            )])
+    else:
+        return Tree('ROOT', [Tree('SQ',
+            [ verb_node, g.get_subject(node) ] +
+            (pred[:verb_idx] + pred[verb_idx+1:]) +
+            [Tree('.', ['?'])]
+            )])
+
+def process_sentence(sp, raw_sentence):
+    result = {'total_count': 1, 'simple_pred_count': 0, 'fail_count': 0}
+
+    # The parser gives back an iter(Tree).
+    # TODO: Handle when the size of `parses` is not 1
+    parses = sp.raw_parse(expand_contractions(raw_sentence))
+
+    # get 0'th tree from iterator of parses
+    tree = next(parses)
+
+    if g.is_simple_pred(tree):
+        result['simple_pred_count'] = 1
+
+        util.log(g.as_string(tree))
+
+        question = try_make_binary_question(tree)
+        if question is not None:
+            util.log(g.as_string(question))
+        else:
+            result['fail_count'] = 1
+
+        util.log('-' * 80)
+
+    return result
+
+
+def main(article_name, nquestions):
+    sp = stanford.StanfordParser()
+
+    with codecs.open(article_name, encoding='utf-8') as f:
+        sentences = nltk.sent_tokenize(f.read())
+
+    total_count = 0
+    simple_pred_count = 0
+    fail_count = 0
+
+    for raw_sentence in sentences:
+        rc = process_sentence(sp, raw_sentence)
+
+        total_count += rc['total_count']
+        simple_pred_count += rc['simple_pred_count']
+        fail_count += rc['fail_count']
+
+
+    util.log('\nSUMMARY:\n')
+    util.log('Sentences:    %d' % total_count)
+    util.log('Simple pred:  %d' % simple_pred_count)
+    util.log('Failed:       %d' % fail_count)
+
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 3:
+        print('usage: %s <article> <nquestions>' % sys.argv[0])
+        sys.exit(1)
+
+    article_name = sys.argv[1]
+    nquestions = int(sys.argv[2])
+
+    main(article_name, nquestions)
