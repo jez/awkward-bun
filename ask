@@ -3,6 +3,7 @@
 from __future__ import print_function
 import sys
 import codecs
+from Queue import PriorityQueue
 
 # this module should be imported before using any NLTK or Stanford Parser code,
 # as it initializes these with their support folders.
@@ -21,7 +22,7 @@ from pattern.en import conjugate
 def try_make_binary_question(node):
     pred = g.get_predicate(node)
 
-    verb_node = next(t for t in pred if g.is_verb_node(t))
+    verb_node = next(t for t in pred if g.is_verb(t))
     verb_idx = pred.index(verb_node)
     if g.is_leaf(verb_node):
         verb_str = ' '.join(verb_node)
@@ -30,26 +31,71 @@ def try_make_binary_question(node):
         g.log_error(node, "Thought verb was terminal, but it wasn't: %s" % `verb_node`)
         return None
 
-    if len(filter(g.is_verb_node, pred)) == 1 and verb_inf != 'be':
+    result_node = None
+    extras = {'verb_inf': verb_inf}
+    if len(filter(g.is_verb, pred)) == 1 and verb_inf != 'be':
         verb_pos = verb_node.label()
         new_pred = pred[:]
         new_pred[verb_idx] = Tree('VB', [verb_inf])
-        return Tree('ROOT', [Tree('SQ', [
-                Tree(verb_pos, [conjugate('do', verb_pos)]),
-                g.get_subject(node)
+        result_node = Tree('ROOT', [Tree('SQ', [
+                g.upcase(Tree(verb_pos, [conjugate('do', verb_pos)])),
+                g.downcase(g.get_subject(node)),
                 ] +
                 new_pred +
                 [Tree('.', ['?'])]
             )])
     else:
-        return Tree('ROOT', [Tree('SQ',
-            [ verb_node, g.get_subject(node) ] +
+        result_node = Tree('ROOT', [Tree('SQ', [
+            g.upcase(verb_node),
+            g.downcase(g.get_subject(node))
+            ] +
             (pred[:verb_idx] + pred[verb_idx+1:]) +
             [Tree('.', ['?'])]
             )])
 
+    return { 'node': result_node, 'extras': extras}
+
+def rank_binary_question(sentence, question, extras):
+    score = 0
+
+    num_words = len(sentence.leaves())
+    height = sentence.height()
+    subject = g.get_subject(sentence)
+    pred = g.get_predicate(sentence)
+
+    if extras['verb_inf'] == 'be':
+        score += 1
+
+    if num_words <= 16:
+        score += 1
+
+    if num_words <= 10:
+        score += 0.5
+
+    if height <= 13:
+        score += 0.5
+
+    if height <= 10:
+        score += 0.75
+
+    if g.tree_any(subject, g.is_proper_noun):
+        score += 1
+
+    if g.tree_any(subject, g.is_prp):
+        score -= 1
+
+    return score
+
+
 def process_sentence(sp, raw_sentence):
-    result = {'total_count': 1, 'simple_pred_count': 0, 'fail_count': 0}
+    result = {
+            'total_count': 1,
+            'simple_pred_count': 0,
+            'fail_count': 0,
+            'rank': 0,
+            'sentence': '',
+            'question': '',
+    }
 
     # The parser gives back an iter(Tree).
     # TODO: Handle when the size of `parses` is not 1
@@ -57,17 +103,25 @@ def process_sentence(sp, raw_sentence):
 
     # get 0'th tree from iterator of parses
     tree = next(parses)
+    result['sentence'] = tree
 
     if g.is_simple_pred(tree):
         result['simple_pred_count'] = 1
 
-        util.log(g.as_string(tree))
+        util.log(tree)
 
-        question = try_make_binary_question(tree)
-        if question is not None:
-            util.log(g.as_string(question))
-        else:
+        rc = try_make_binary_question(tree)
+
+        if rc is None:
             result['fail_count'] = 1
+        else:
+            question = rc['node']
+            result['question'] = question
+            extras = rc['extras']
+
+            util.log(g.as_string(question))
+
+            result['rank'] = rank_binary_question(tree, question, extras)
 
         util.log('-' * 80)
 
@@ -83,20 +137,32 @@ def main(article_name, nquestions):
     total_count = 0
     simple_pred_count = 0
     fail_count = 0
+    bests = PriorityQueue()
 
     for raw_sentence in sentences:
+        if len(raw_sentence) > 150:
+            continue
+
         rc = process_sentence(sp, raw_sentence)
 
         total_count += rc['total_count']
         simple_pred_count += rc['simple_pred_count']
         fail_count += rc['fail_count']
 
+        bests.put((rc['rank'], rc['question'], rc['sentence']))
+
+        if bests.qsize() > nquestions:
+            _ = bests.get()
+
 
     util.log('\nSUMMARY:\n')
     util.log('Sentences:    %d' % total_count)
     util.log('Simple pred:  %d' % simple_pred_count)
     util.log('Failed:       %d' % fail_count)
+    util.log()
 
+    for score, question, sentence in bests.queue:
+        util.log('[%0.2f] %s' % (score, g.as_string(question)))
 
 
 if __name__ == '__main__':
