@@ -111,3 +111,25 @@ def as_string(node):
     with all string children, then joining those strings.
     """
     return ' '.join(node.flatten())
+
+def is_label_in(node, label):
+    for i in xrange(len(node)):
+        child = node[i]
+        if (child.label() == label):
+            return True
+    return False
+
+def find_label_in(node, label):
+    for i in xrange(len(node)):
+        child = node[i]
+        if (child.label() == label):
+            return i
+    return -1
+
+def find_verb_in(node):
+    for i in xrange(len(node)):
+        child = node[i]
+        if (is_verb_node(child)):
+            return i
+    return -1
+
