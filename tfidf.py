@@ -40,7 +40,7 @@ def tokenize(sentence, stemmer):
     return stemmed
 
 # gives number of documents that contain a given token
-def no_appear(token, tokenized_docs):  
+def no_appear(token, tokenized_docs):
     no = 0
     for d in tokenized_docs:
         if token in d:
@@ -68,12 +68,12 @@ def tfidf(article_name):
         no_tokens = len(tokens)
 
         scores[sentence] = {'tf': {}, 'idf': {}, 'tf-idf': {}}
-         
+
         #tf
         for t in tokens:
             freq = tokens.count(t)
             scores[sentence]['tf'][t] = freq / float(no_tokens)
-        
+
         tokenized_sentences.append(tokens)
 
     no_sentences = len(sentences)
@@ -83,7 +83,7 @@ def tfidf(article_name):
             tf_val = scores[sentence]['tf'][token]
 
             # idf
-            idf_val = math.log(float(no_sentences) / 
+            idf_val = math.log(float(no_sentences) /
                       no_appear(token, tokenized_sentences))
             scores[sentence]['idf'][token] = idf_val
 
