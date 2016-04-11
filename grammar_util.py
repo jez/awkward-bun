@@ -19,6 +19,8 @@ def log_error(tree, message):
         print(tree,                       file=sys.stderr)
 
 
+# ----- Simple predicate sentence helpers ------------------------------------
+
 def is_complete_sentence(root_node):
     """
     We'll use "complete sentence" to mean we've found a node tagged 'S'
@@ -92,6 +94,9 @@ def get_predicate(root_node):
     """
     return get_sentence(root_node)[1]
 
+
+# ----- Node label helpers ---------------------------------------------------
+
 def is_verb(node):
     """
     A verb is either a non-terminal VP (verb phrase), a terminal verb (VB, VBZ,
@@ -114,6 +119,9 @@ def is_prp(node):
     """
     return node.label() == 'PRP'
 
+
+# ----- Tree traversal helpers -----------------------------------------------
+
 def is_leaf(node):
     """
     For us "leaf" nodes are the nltk.tree.Tree objects that contain no Tree
@@ -131,6 +139,38 @@ def tree_any(tree, f):
     else:
         return False
 
+def is_label_in(node, label):
+    """
+    Searches the immediate children of a node for a certain label, returning
+    True when such a label exists, and False when it doesn't
+    """
+    return any([child.label() == label for child in node])
+
+def find_label_in(node, label):
+    """
+    Searches the immediate children of a node for a certain label, returning
+    the index of the first match if it exists, or None when it doesn't.
+    """
+    for i in xrange(len(node)):
+        child = node[i]
+        if (child.label() == label):
+            return i
+    return None
+
+def find_verb_in(node):
+    """
+    Searches the immediate children of a node for any verb label, returning
+    the index of the first match if it exists, or None when it doesn't.
+    """
+    for i in xrange(len(node)):
+        child = node[i]
+        if (is_verb(child)):
+            return i
+    return None
+
+
+# ----- Tree to string helpers -----------------------------------------------
+
 def as_string(node):
     """
     We can get a simple string from a node by flattening it to give us a Tree
@@ -139,7 +179,7 @@ def as_string(node):
     On top of this, we heuristically try to push punctuation back up to the
     previous token using a regex, so things like
         "Is this a question ?"
-    becomes
+    become
         "Is this a question?"
     (note the '?' placement).
     """
@@ -180,34 +220,5 @@ def downcase(node, pos=None):
             left_child = node[0]
             return Tree(node.label(),
                     [downcase(left_child, pos=node.label())] + node[1:])
-
-def is_label_in(node, label):
-    """
-    Searches the immediate children of a node for a certain label, returning
-    True when such a label exists, and False when it doesn't
-    """
-    return any([child.label() == label for child in node])
-
-def find_label_in(node, label):
-    """
-    Searches the immediate children of a node for a certain label, returning
-    the index of the first match if it exists, or None when it doesn't.
-    """
-    for i in xrange(len(node)):
-        child = node[i]
-        if (child.label() == label):
-            return i
-    return None
-
-def find_verb_in(node):
-    """
-    Searches the immediate children of a node for any verb label, returning
-    the index of the first match if it exists, or None when it doesn't.
-    """
-    for i in xrange(len(node)):
-        child = node[i]
-        if (is_verb(child)):
-            return i
-    return None
 
 
