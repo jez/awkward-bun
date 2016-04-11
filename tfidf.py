@@ -92,8 +92,7 @@ def tfidf(article_name):
 
     return scores
 
-        
-        
+
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print('usage: %s <article>' % sys.argv[0])
@@ -102,7 +101,7 @@ if __name__ == '__main__':
     article_name = sys.argv[1]
 
     scores = tfidf(article_name)
-            
+
     # print :D
     for sentence in scores:
         print("\ntf-idf for sentence: " + sentence)
