@@ -182,24 +182,32 @@ def downcase(node, pos=None):
                     [downcase(left_child, pos=node.label())] + node[1:])
 
 def is_label_in(node, label):
-    for i in xrange(len(node)):
-        child = node[i]
-        if (child.label() == label):
-            return True
-    return False
+    """
+    Searches the immediate children of a node for a certain label, returning
+    True when such a label exists, and False when it doesn't
+    """
+    return any([child.label() == label for child in node])
 
 def find_label_in(node, label):
+    """
+    Searches the immediate children of a node for a certain label, returning
+    the index of the first match if it exists, or None when it doesn't.
+    """
     for i in xrange(len(node)):
         child = node[i]
         if (child.label() == label):
             return i
-    return -1
+    return None
 
 def find_verb_in(node):
+    """
+    Searches the immediate children of a node for any verb label, returning
+    the index of the first match if it exists, or None when it doesn't.
+    """
     for i in xrange(len(node)):
         child = node[i]
-        if (is_verb_node(child)):
+        if (is_verb(child)):
             return i
-    return -1
+    return None
 
 
