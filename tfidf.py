@@ -89,23 +89,23 @@ def tfidf(article_name):
 
             #tf-idf
             scores[sentence]['tf-idf'][token] = tf_val * idf_val
-            
-    # print :D
-    #for sentence in scores:
-    #    print("\ntf-idf for sentence: " + sentence)
-    #    for token in scores[sentence]['tf-idf']:
-    #        print(token + ": " + str(scores[sentence]['tf-idf'][token]))
-    #    print
 
     return scores
 
         
         
-#if __name__ == '__main__':
-#    if len(sys.argv) != 2:
-#        print('usage: %s <article>' % sys.argv[0])
-#        sys.exit(1)
-#
-#    article_name = sys.argv[1]
-#
-#    tfidf(article_name)
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print('usage: %s <article>' % sys.argv[0])
+        sys.exit(1)
+
+    article_name = sys.argv[1]
+
+    scores = tfidf(article_name)
+            
+    # print :D
+    for sentence in scores:
+        print("\ntf-idf for sentence: " + sentence)
+        for token in scores[sentence]['tf-idf']:
+            print(token + ": " + str(scores[sentence]['tf-idf'][token]))
+        print
