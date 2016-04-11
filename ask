@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 import sys
+import time
 import codecs
 from Queue import PriorityQueue
 
@@ -139,6 +140,8 @@ def main(article_name, nquestions):
     fail_count = 0
     bests = PriorityQueue()
 
+    start_time = time.time()
+
     for raw_sentence in sentences:
         if len(raw_sentence) > 150:
             continue
@@ -153,6 +156,10 @@ def main(article_name, nquestions):
 
         if bests.qsize() > nquestions:
             _ = bests.get()
+
+        if time.time() - start_time > 4.9 * 60:
+            # Save some time to output our answer before the timeout
+            break
 
 
     util.log('\nSUMMARY:\n')
