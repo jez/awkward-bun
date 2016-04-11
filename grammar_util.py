@@ -140,11 +140,15 @@ def as_string(node):
     previous token using a regex, so things like
         "Is this a question ?"
     becomes
-        "Is this ia question?"
+        "Is this a question?"
     (note the '?' placement).
     """
     joined = ' '.join(node.flatten())
-    return re.sub(r'\s+(\W)', r'\1', joined)
+    joined = re.sub(r'``', '"', joined)
+    joined = re.sub(r"\s+''", '"', joined)
+    joined = re.sub(r'-LRB-', '(', joined)
+    joined = re.sub(r'-RRB-', ')', joined)
+    return re.sub(r"\s+([-?.,')])", r'\1', joined)
 
 def upcase(node):
     """
