@@ -1,0 +1,7 @@
+# Force git to track "empty" folder
+
+# ignore all files in this dir...
+*
+
+# ... except this one.
+!.gitignore
