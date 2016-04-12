@@ -19,6 +19,8 @@ os.environ['STANFORD_MODELS'] = TOPLEVEL + '/jars' + ':' + TOPLEVEL + '/classifi
 
 os.environ['NLTK_DATA'] = './nltk_data'
 
+ENGLISH_TAGGER = 'classifiers/english.all.3class.distsim.crf.ser.gz'
+
 # Run `export DEBUG=1` to enable debugging mode
 try:
     DEBUG = bool(os.environ['DEBUG'])

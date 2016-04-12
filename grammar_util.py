@@ -119,6 +119,39 @@ def is_prp(node):
     """
     return node.label() == 'PRP'
 
+def is_heshehishers(node):
+    """
+    Searches for pronouns "he", "she", "his", and "hers",
+    returning True if found.
+    """
+    if len(node) != 1:
+        return False
+
+    target = node[0].lower()
+    pos = node.label()
+
+    return ((pos == 'PRP')  and (target == 'he'  or target == 'she')) or \
+           ((pos == 'PRP$') and (target == 'his' or target == 'hers'))
+
+def is_itits(node):
+    """
+    Searches for pronouns "it", and "its", returning True if found.
+    """
+    if len(node) != 1:
+        return False
+
+    target = node[0].lower()
+    pos = node.label()
+
+    return ((pos == 'PRP')  and (target == 'it')) or \
+           ((pos == 'PRP$') and (target == 'its'))
+
+def is_definite_article(node):
+    """
+    Searches for definite articles, like 'the', 'this', 'that', etc.
+    """
+    return node.label() == 'DT' and len(node) == 1 and node[0].lower()[:2] == 'th'
+
 # ----- Tree traversal helpers -----------------------------------------------
 
 def is_leaf(node):
@@ -138,14 +171,45 @@ def tree_any(tree, f):
     else:
         return f(tree) or any(tree_any(child, f) for child in tree)
 
-def replace_leftmost(node, f, replacement):
+def filter_tree(node, f):
     """
-    Iterate over all nodes of the tree, running pred on the node if it's a
+    Runs a predicate function f over all the elements of a tree.
+    Removes any nodes for which the predicate is False.
+
+    @returns None if f returns False on the root, o.w. returns a Tree with the
+        appropriate children filtered.
+    """
+    if not isinstance(node, Tree):
+        return node
+    else:
+        if f(node):
+            filtered_children = []
+            for child in node:
+                result = filter_tree(child, f)
+                if result is not None:
+                    filtered_children.append(result)
+            return Tree(node.label(), filtered_children)
+        else:
+            return None
+
+
+def replace_leftmost(node, f, replacer):
+    """
+    Iterate over all nodes of the tree, running f on the node to determine if
+    it's a leaf, and running replacer on the node if f returns True.
+
+    @param f Is given a leaf node (as determined by is_leaf), and should return
+        a boolean of whether to run `replacer` on this node
+    @param replacer Is given a node and should return a list of Trees
+        corresponding to what the replacer should be
+
+    @return WARNING: This will return a list of Trees instead of a Tree if the
+        top-most call is on a leaf node. Otherwise, returns a Tree.
     """
     if is_leaf(node):
         if f(node):
             replaced = True
-            return (replacement(node), replaced)
+            return (replacer(node), replaced)
         else:
             replaced = False
             return (node, replaced)
@@ -154,8 +218,11 @@ def replace_leftmost(node, f, replacement):
         new_children = []
 
         for cursor in xrange(len(node)):
-            (child, replaced) = replace_leftmost(node[cursor], pred, replacement)
-            new_children.append(child)
+            (child, replaced) = replace_leftmost(node[cursor], f, replacer)
+            if type(child) == list:
+                new_children += child
+            else:
+                new_children.append(child)
 
             # stop after leftmost replacement is made
             if replaced:
@@ -164,7 +231,20 @@ def replace_leftmost(node, f, replacement):
         # copy over the rest of the children unchanged
         new_children += node[cursor+1:]
 
-        return Tree(node.label(), new_children)
+        return (Tree(node.label(), new_children), replaced)
+
+def unwrapUntilNP(node):
+    """
+    Unwraps things like 'ROOT' and 'FRAG' until we get down to an NP by
+    traversing the left spine.
+    """
+    if node.label() == 'NP':
+        return list(node)
+    else:
+        if len(node) == 0:
+            return []
+        else:
+            return unwrapUntilNP(node[0])
 
 def is_label_in(node, label):
     """
@@ -211,11 +291,14 @@ def as_string(node):
     (note the '?' placement).
     """
     joined = ' '.join(node.flatten())
-    joined = re.sub(r'``', '"', joined)
+    joined = re.sub(r'``\s+', '"', joined)
     joined = re.sub(r"\s+''", '"', joined)
-    joined = re.sub(r'-LRB-', '(', joined)
+    joined = re.sub(r'\s+-LRB-\s+\s+-RRB-', '()', joined)
+    joined = re.sub(r'-LRB-\s+', '(', joined)
     joined = re.sub(r'-RRB-', ')', joined)
-    return re.sub(r"\s+([-?.,')])", r'\1', joined)
+    joined = re.sub(r'-LSB-\s+', '[', joined)
+    joined = re.sub(r'-RSB-', ']', joined)
+    return re.sub(r"\s+([-?.,';)])", r'\1', joined)
 
 def upcase(node):
     """

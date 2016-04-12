@@ -16,12 +16,41 @@ from contractions import expand_contractions
 
 import nltk
 from nltk.tree import Tree
-from nltk.parse import stanford
+from nltk.parse import stanford as stanford_parse
+from nltk.tag import stanford as stanford_tag
 from pattern.en import conjugate
 
 
-def try_make_binary_question(node):
-    pred = g.get_predicate(node)
+def pronounToNounPhrase(replacements):
+    def fn(node):
+        pos = node.label()
+        if pos == 'PRP':
+            return replacements
+        elif pos == 'PRP$':
+            return Tree('NP', replacements + [Tree('POS', ["'s"])])
+    return fn
+
+def disambiguateWith(sense, subject, replacements):
+    if sense == 'PERSON':
+        pred = g.is_heshehishers
+    elif sense == 'IMPERSONAL':
+        pred = g.is_itits
+    else:
+        return subject
+
+    replacer = pronounToNounPhrase(replacements)
+    result, replaced = g.replace_leftmost(subject, pred, replacer)
+    return result
+
+
+def try_make_binary_question(node, article_title, sense):
+    node_new = g.filter_tree(node, lambda n: n.label() != 'PRN')
+    if not g.is_simple_pred(node_new):
+        node_no_prn = node
+
+    subject = disambiguateWith(sense, g.get_subject(node_new), article_title)
+
+    pred = g.get_predicate(node_new)
 
     verb_node = next(t for t in pred if g.is_verb(t))
     verb_idx = pred.index(verb_node)
@@ -29,7 +58,7 @@ def try_make_binary_question(node):
         verb_str = ' '.join(verb_node)
         verb_inf = conjugate(verb_str, 'VB')
     else:
-        g.log_error(node, "Thought verb was terminal, but it wasn't: %s" % `verb_node`)
+        g.log_error(node_new, "Thought verb was terminal, but it wasn't: %s" % `verb_node`)
         return None
 
     result_node = None
@@ -40,7 +69,7 @@ def try_make_binary_question(node):
         new_pred[verb_idx] = Tree('VB', [verb_inf])
         result_node = Tree('ROOT', [Tree('SQ', [
                 g.upcase(Tree(verb_pos, [conjugate('do', verb_pos)])),
-                g.downcase(g.get_subject(node)),
+                g.downcase(subject),
                 ] +
                 new_pred +
                 [Tree('.', ['?'])]
@@ -48,7 +77,7 @@ def try_make_binary_question(node):
     else:
         result_node = Tree('ROOT', [Tree('SQ', [
             g.upcase(verb_node),
-            g.downcase(g.get_subject(node))
+            g.downcase(subject)
             ] +
             (pred[:verb_idx] + pred[verb_idx+1:]) +
             [Tree('.', ['?'])]
@@ -67,6 +96,11 @@ def rank_binary_question(sentence, question, extras):
     if extras['verb_inf'] == 'be':
         score += 1
 
+    # special case an incorrectly parsed sentence in Python (language):
+    # "Does Python 3.0 change / to be ..." -> '/' becomes verb??
+    if extras['verb_inf'] == '/':
+        score -= 5
+
     if num_words <= 16:
         score += 1
 
@@ -80,15 +114,18 @@ def rank_binary_question(sentence, question, extras):
         score += 0.75
 
     if g.tree_any(subject, g.is_proper_noun):
-        score += 1
+        score += 1.25
 
     if g.tree_any(subject, g.is_prp):
-        score -= 1
+        score -= 0.5
+
+    if g.tree_any(subject, g.is_definite_article):
+        score -= 0.75
 
     return score
 
 
-def process_sentence(sp, raw_sentence):
+def process_sentence(sp, title_info, raw_sentence):
     result = {
             'total_count': 1,
             'simple_pred_count': 0,
@@ -97,6 +134,9 @@ def process_sentence(sp, raw_sentence):
             'sentence': '',
             'question': '',
     }
+
+    article_title = title_info['article_title']
+    article_sense = title_info['article_sense']
 
     # The parser gives back an iter(Tree).
     # TODO: Handle when the size of `parses` is not 1
@@ -111,7 +151,7 @@ def process_sentence(sp, raw_sentence):
 
         util.log(tree)
 
-        rc = try_make_binary_question(tree)
+        rc = try_make_binary_question(tree, article_title, article_sense)
 
         if rc is None:
             result['fail_count'] = 1
@@ -129,10 +169,32 @@ def process_sentence(sp, raw_sentence):
     return result
 
 
+def process_title(sp, st, raw_title):
+    title_parsed = next(sp.raw_parse(raw_title))
+    title_tagged = st.tag(raw_title.split())
+
+    filtered = g.filter_tree(title_parsed, lambda node: node.label() != 'PRN')
+    article_title = g.unwrapUntilNP(filtered)
+
+    result = {
+        'article_title': article_title,
+        'article_sense': None,
+    }
+
+    if all([tag == 'PERSON' for tok, tag in title_tagged]):
+        result['article_sense'] = 'PERSON'
+    else:
+        result['article_sense'] = 'IMPERSONAL'
+
+    return result
+
+
 def main(article_name, nquestions):
-    sp = stanford.StanfordParser()
+    sp = stanford_parse.StanfordParser()
+    st = stanford_tag.StanfordNERTagger(s.ENGLISH_TAGGER)
 
     with codecs.open(article_name, encoding='utf-8') as f:
+        raw_title = f.readline()
         sentences = nltk.sent_tokenize(f.read())
 
     total_count = 0
@@ -142,11 +204,13 @@ def main(article_name, nquestions):
 
     start_time = time.time()
 
+    title_info = process_title(sp, st, raw_title)
+
     for raw_sentence in sentences:
         if len(raw_sentence) > 150:
             continue
 
-        rc = process_sentence(sp, raw_sentence)
+        rc = process_sentence(sp, title_info, raw_sentence)
 
         total_count += rc['total_count']
         simple_pred_count += rc['simple_pred_count']
@@ -170,6 +234,7 @@ def main(article_name, nquestions):
 
     for score, question, sentence in bests.queue:
         util.log('[%0.2f] %s' % (score, g.as_string(question)))
+        util.output(g.as_string(question))
 
 
 if __name__ == '__main__':
