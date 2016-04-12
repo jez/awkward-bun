@@ -13,6 +13,9 @@ from nltk.parse import stanford
 from nltk.tree import Tree
 from pattern.en import conjugate
 
+#given a question as a single string, outputs the question transformed
+#into a statement, with "noun phrase" substituted for what is being asked for.
+#Also classifies question as either SBARQ(WH), or SQ(Binary)
 
 def q_class(question):
     parser = stanford.StanfordParser()
@@ -29,16 +32,20 @@ def q_class(question):
             print("question not structured properly")
             return (None, "error")
         else:
+            #Checking if querying for subject
             if g.is_label_in(sq_node, 'NP'):
                 subject_idx = g.find_label_in(sq_node, 'NP')
                 subject_node = sq_node[subject_idx]
             else:
                 subject_node = filler
+                subject_idx = len(sq_node)
             #checking for existance of auxillary verb
             if g.is_verb(sq_node[-1]):
                 verb_node = sq_node[-1]
+                remaining_phrase = []
             else:
                 verb_node = sq_node[0]
+                remaining_phrase = sq_node[subject_idx + 1:]
 
             object_node = filler
             pre_phrase = []
@@ -46,8 +53,10 @@ def q_class(question):
             post_phrase = []
             v_node = verb_node
 
+            #case where not a simple verb
             if not g.is_leaf(verb_node):
-                object_idx = len(verb_node)
+                verb_idx = g.find_verb_in(verb_node)
+                #querying for object within verb phrase
                 if subject_node == filler:
                     if g.is_label_in(verb_node,'NP'):
                         object_idx = g.find_label_in(verb_node, 'NP')
@@ -57,15 +66,15 @@ def q_class(question):
                         if g.is_label_in(verb_node[PP_idx],'NP'):
                             object_node = verb_node[PP_idx]
                             object_idx = PP_idx
-
-                verb_idx = g.find_verb_in(verb_node)
-                print(verb_idx)
+                    mid_phrase = verb_node[verb_idx + 1:object_idx]
+                    post_phrase = verb_node[object_idx + 1:]
+                else:
+                    object_idx = verb_idx + 1
+                    post_phrase = verb_node[object_idx:]
                 v_node = verb_node[verb_idx]
                 pre_phrase = verb_node[:verb_idx]
-                mid_phrase = verb_node[verb_idx + 1 :object_idx]
-                post_phrase = [] if object_idx == len(verb_node) else verb_node[object_idx + 1:]
 
-
+            #conjugate the main verb if an auxiliary verb exists
             if g.is_verb(sq_node[-1]) and len(sq_node) > 1:
                     aux_node = sq_node[0]
                     verb_label = aux_node.label()
@@ -74,9 +83,8 @@ def q_class(question):
 
             vp_node = Tree('VP', pre_phrase + [v_node] + mid_phrase + [object_node] + post_phrase)
 
-
             return (Tree('ROOT', [Tree('S',
-                        [subject_node] + [vp_node]
+                        [subject_node] + [vp_node] + remaining_phrase
                         )]), "SBARQ")
     elif s_tag == "SQ":
         verb_node = s_node[0]
@@ -86,8 +94,7 @@ def q_class(question):
         np_node = s_node[1]
         rest = s_node[2:-1]
         return (Tree('ROOT', [Tree('S',
-                    [np_node] + [verb_node] + rest + [Tree('.', ['.'])]), "SQ")
-        ])
+                    [np_node] + [verb_node] + rest + [Tree('.', ['.'])])]), "SQ")
     else:
         print("question not structured properly")
         return (None, "error")
@@ -100,6 +107,7 @@ def print_q(question):
     parse.next().draw()
 
 
+# q = "where is he on thursday?"
 # print_q(q)
 # q_class(q)[0].draw()
 #print([sent for sent in sentences])
