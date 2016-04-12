@@ -6,3 +6,7 @@ import settings
 def log(*args, **kwargs):
     if settings.DEBUG:
         print(*args, **kwargs)
+
+def output(*args, **kwargs):
+    if not settings.DEBUG:
+        print(*args, **kwargs)
