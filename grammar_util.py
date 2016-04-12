@@ -119,7 +119,6 @@ def is_prp(node):
     """
     return node.label() == 'PRP'
 
-
 # ----- Tree traversal helpers -----------------------------------------------
 
 def is_leaf(node):
@@ -134,10 +133,38 @@ def tree_any(tree, f):
     Runs a predicate function f over all the elements of a tree.
     Returns whether the function is true for any element of the tree.
     """
-    if isinstance(tree, Tree):
-        return f(tree) or any(tree_any(child, f) for child in tree)
-    else:
+    if not isinstance(tree, Tree):
         return False
+    else:
+        return f(tree) or any(tree_any(child, f) for child in tree)
+
+def replace_leftmost(node, f, replacement):
+    """
+    Iterate over all nodes of the tree, running pred on the node if it's a
+    """
+    if is_leaf(node):
+        if f(node):
+            replaced = True
+            return (replacement(node), replaced)
+        else:
+            replaced = False
+            return (node, replaced)
+
+    else:
+        new_children = []
+
+        for cursor in xrange(len(node)):
+            (child, replaced) = replace_leftmost(node[cursor], pred, replacement)
+            new_children.append(child)
+
+            # stop after leftmost replacement is made
+            if replaced:
+                break
+
+        # copy over the rest of the children unchanged
+        new_children += node[cursor+1:]
+
+        return Tree(node.label(), new_children)
 
 def is_label_in(node, label):
     """
@@ -220,5 +247,4 @@ def downcase(node, pos=None):
             left_child = node[0]
             return Tree(node.label(),
                     [downcase(left_child, pos=node.label())] + node[1:])
-
 
