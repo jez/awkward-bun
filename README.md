@@ -96,6 +96,37 @@ them from the models JAR file:
 $ jar xf stanford-parser-3.5.2-models.jar
 ```
 
+## Running
+
+Make sure you have properly set up the system. From there, there are two entry
+points: the `ask` module and the `answer` module.
+
+
+### `./ask`
+
+```bash
+$ ./ask
+usage: ./ask <article> <nquestions>
+
+$ ./ask ./external/data/set1/a1.txt 10
+Is the sky blue?
+...
+
+# alternatively, run with debugging enabled:
+$ DEBUG=1 ./ask ./external/data/set1/a1.txt 10
+... Lots of debugging output ...
+
+Summary:
+...
+
+[3.50] Is the sky blue?
+...
+```
+
+### `./answer`
+
+TODO!
+
 
 ## Members
 
