@@ -19,4 +19,8 @@ os.environ['STANFORD_MODELS'] = TOPLEVEL + '/jars' + ':' + TOPLEVEL + '/classifi
 
 os.environ['NLTK_DATA'] = './nltk_data'
 
-DEBUG = True
+# Run `export DEBUG=1` to enable debugging mode
+try:
+    DEBUG = bool(os.environ['DEBUG'])
+except:
+    DEBUG = False
