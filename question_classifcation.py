@@ -27,7 +27,7 @@ def q_class(question):
 
     if s_tag == "SBARQ":
         sq_node = s_node[1]
-        filler = Tree('NP', [Tree('NN', ['noun']), Tree('NN', ['phrase'])])
+        filler = Tree('NP', [Tree('NN', ['Richard']), Tree('NN', ['Fan'])])
         if not g.is_verb(sq_node[0]):
             print("question not structured properly")
             return (None, "error")
@@ -47,7 +47,7 @@ def q_class(question):
                 verb_node = sq_node[0]
                 remaining_phrase = sq_node[subject_idx + 1:]
 
-            object_node = filler
+            object_node = [filler]
             pre_phrase = []
             mid_phrase = []
             post_phrase = []
@@ -64,10 +64,13 @@ def q_class(question):
                     elif g.is_label_in(verb_node, 'PP'):
                         PP_idx = g.find_label_in(verb_node, 'PP')
                         if g.is_label_in(verb_node[PP_idx],'NP'):
-                            object_node = verb_node[PP_idx]
+                            object_node = [verb_node[PP_idx]]
                             object_idx = PP_idx
+                    else:
+                        object_node = []
+                        object_idx = verb_idx + 1
                     mid_phrase = verb_node[verb_idx + 1:object_idx]
-                    post_phrase = verb_node[object_idx + 1:]
+                    post_phrase = verb_node[object_idx:]
                 else:
                     object_idx = verb_idx + 1
                     post_phrase = verb_node[object_idx:]
@@ -81,11 +84,13 @@ def q_class(question):
                     new_verb = conjugate(v_node[0], verb_label)
                     v_node = Tree(verb_label, [new_verb])
 
-            vp_node = Tree('VP', pre_phrase + [v_node] + mid_phrase + [object_node] + post_phrase)
+            vp_node = Tree('VP', pre_phrase + [v_node] + mid_phrase + object_node + post_phrase)
 
-            return (Tree('ROOT', [Tree('S',
+            tree = Tree('ROOT', [Tree('S',
                         [subject_node] + [vp_node] + remaining_phrase
-                        )]), "SBARQ")
+                        )])
+            tree.chomsky_normal_form()
+            return (tree, "SBARQ")
     elif s_tag == "SQ":
         verb_node = s_node[0]
         if not g.is_verb(verb_node):
@@ -93,8 +98,10 @@ def q_class(question):
             return (None, "error")
         np_node = s_node[1]
         rest = s_node[2:-1]
-        return (Tree('ROOT', [Tree('S',
-                    [np_node] + [verb_node] + rest + [Tree('.', ['.'])])]), "SQ")
+        tree = Tree('ROOT', [Tree('S',
+                    [np_node] + [verb_node] + rest + [Tree('.', ['.'])])])
+        tree.chomsky_normal_form()
+        return (tree,"SQ")
     else:
         print("question not structured properly")
         return (None, "error")
@@ -107,8 +114,8 @@ def print_q(question):
     parse.next().draw()
 
 
-# q = "where is he on thursday?"
-# print_q(q)
-# q_class(q)[0].draw()
+q = "Who is he going with?"
+print_q(q)
+q_class(q)[0].draw()
 #print([sent for sent in sentences])
 
