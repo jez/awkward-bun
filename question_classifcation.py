@@ -29,8 +29,11 @@ def q_class(question):
         sq_node = s_node[1]
         filler = Tree('NP', [Tree('NN', ['Richard']), Tree('NN', ['Fan'])])
         if not g.is_verb(sq_node[0]):
-            print("question not structured properly")
-            return (None, "error")
+            s_node.set_label("S")
+            tree = Tree("Root", [s_node])
+            tree.chomsky_normal_form()
+            print("Case for non-initial verb_node in SBARQ not accounted for")
+            return (tree, "error")
         else:
             #Checking if querying for subject
             if g.is_label_in(sq_node, 'NP'):
@@ -94,17 +97,24 @@ def q_class(question):
     elif s_tag == "SQ":
         verb_node = s_node[0]
         if not g.is_verb(verb_node):
-            print("question not structured properly")
-            return (None, "error")
-        np_node = s_node[1]
-        rest = s_node[2:-1]
-        tree = Tree('ROOT', [Tree('S',
-                    [np_node] + [verb_node] + rest + [Tree('.', ['.'])])])
-        tree.chomsky_normal_form()
-        return (tree,"SQ")
+            s_node.set_label("S")
+            tree = Tree("Root", [s_node])
+            tree.chomsky_normal_form()
+            print("Case for non-initial verb_node in SQ not accounted for")
+            return (tree, "error")
+        else:
+            np_node = s_node[1]
+            rest = s_node[2:-1]
+            tree = Tree('ROOT', [Tree('S',
+                        [np_node] + [verb_node] + rest + [Tree('.', ['.'])])])
+            tree.chomsky_normal_form()
+            return (tree,"SQ")
     else:
-        print("question not structured properly")
-        return (None, "error")
+        s_node.set_label("S")
+        tree = Tree("Root", [s_node])
+        tree.chomsky_normal_form()
+        print("question structure not accounted for")
+        return (tree, "error")
 
 
 def print_q(question):
@@ -114,7 +124,7 @@ def print_q(question):
     parse.next().draw()
 
 
-q = "Who is he going with?"
+q = "I ate the elephant, correct?"
 print_q(q)
 q_class(q)[0].draw()
 #print([sent for sent in sentences])
