@@ -8,7 +8,7 @@ from nltk.parse import stanford
 import io
 import codecs
 import math
-parser = stanford.StanfordParser()
+parser = stanford.StanfordParser(encoding="utf-8")
 
 def tree_edit_distance(t1, t2, p):
 
@@ -38,9 +38,10 @@ def match_tree(tree, query):
 
 
 def select_answer(sentences, query):
-    parses = list(map(lambda x: x.next(), parser.raw_parse_sents(sentences)))
-    query_tree = parser.raw_parse(query).next()
-    query_tree.chomsky_normal_form()
+    print sentences
+    parses = list(map(lambda x: x[0].next(), parser.raw_parse_sents(sentences)))
+#    query_tree = parser.raw_parse(query).next()
+#    query_tree.chomsky_normal_form()
     query_tree = query_tree[0]
     m = -float("inf")
     val = None

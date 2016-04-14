@@ -12,7 +12,7 @@ query_name = sys.argv[2]
 num_sentences = 5
 print "...all systems nominal"
 
-with codecs.open(query_name, encoding="utf-8") as query_f:
+with codecs.open(query_name, encoding="utf-8", errors='ignore') as query_f:
     queries = query_f.readlines()
 print "...queries read"
 scoring_function = tfidf.tfidf(article_name)
@@ -22,6 +22,7 @@ print "...queries parsed"
 sentences_lists = map(lambda x: scoring_function(x, num_sentences), queries)
 print "...relevant sentences found"
 print sentences_lists
+print query_trees
 results = map(lambda (sents, query): answer_finding.select_answer(sents, query), zip(sentences_lists, query_trees))
 for i in results:
      print(grammar_util.as_string(i))
