@@ -124,8 +124,8 @@ def print_q(question):
     parse.next().draw()
 
 
-q = "I ate the elephant, correct?"
-print_q(q)
-q_class(q)[0].draw()
+#q = "I ate the elephant, correct?"
+#print_q(q)
+#q_class(q)[0].draw()
 #print([sent for sent in sentences])
 
