@@ -4,6 +4,8 @@ import settings
 
 import nltk
 from nltk.parse import stanford
+from nltk.stem.porter import PorterStemmer
+import grammar_util    
 
 import io
 import codecs
@@ -38,12 +40,17 @@ def match_tree(tree, query):
 
 
 def select_answer(sentences, query):
-    print sentences
+#    print sentences
+    stemmer = PorterStemmer()
     query,q_type = query
+#    query.pretty_print()
+#    query = grammar_util.as_string(query)
     parses = list(map(lambda x: x.next(), parser.raw_parse_sents(sentences)))
 #    query_tree = parser.raw_parse(query).next()
 #    query_tree.chomsky_normal_form()
+#    query_tree.pretty_print()
     query_tree = query[0]
+#    query_tree.pretty_print()
     m = -float("inf")
     val = None
     for i in parses:
