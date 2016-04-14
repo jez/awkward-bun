@@ -16,8 +16,6 @@ def tree_edit_distance(t1, t2, p):
     if t1.label()[0] != t2.label()[0] and not p(t1): return 0 
     st1 = set(map(lambda x: str(x), t1.subtrees()))
     st2 = set(map(lambda x: str(x), t2.subtrees()))
-#   st1 = set(map(lambda x: str(x.label())+str(x.leaves()) if len(x.leaves())==1 else str(x.label())+str(x.height()), t1.subtrees()))
-#    st2 = set(map(lambda x: str(x.label())+str(x.leaves()) if len(x.leaves())==1 else str(x.label())+str(x.height()), t2.subtrees()))
     return float(len(st1 & st2))/float(len(st2))
 
 def score(query, p):
@@ -34,15 +32,18 @@ def pairmax(L, f):
     return (max_index, max_val)
 
 def match_tree(tree, query):
+#    tree.pretty_print()
+#    query.pretty_print()
     return pairmax(tree.subtrees(), score(query, lambda x: x.label()[0]=='N'))
 
 
 def select_answer(sentences, query):
     print sentences
-    parses = list(map(lambda x: x[0].next(), parser.raw_parse_sents(sentences)))
+    query,q_type = query
+    parses = list(map(lambda x: x.next(), parser.raw_parse_sents(sentences)))
 #    query_tree = parser.raw_parse(query).next()
 #    query_tree.chomsky_normal_form()
-    query_tree = query_tree[0]
+    query_tree = query[0]
     m = -float("inf")
     val = None
     for i in parses:
