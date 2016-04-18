@@ -24,10 +24,7 @@ def log_error(tree, message):
 def is_complete_sentence(root_node):
     """
     We'll use "complete sentence" to mean we've found a node tagged 'S'
-    directly below a node tagged 'ROOT', i.e.:
-
-        (ROOT
-          (S ...))
+    directly below a node tagged 'ROOT', i.e.: (ROOT (S ...))
     """
     return root_node.label() == 'ROOT' and \
             len(root_node) == 1 and \
