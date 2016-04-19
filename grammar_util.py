@@ -297,7 +297,7 @@ def replace_leftmost(node, f, replacer):
 
         return (Tree(node.label(), new_children), replaced)
 
-def unwrapUntilNP(node):
+def unwrap_until_np(node):
     """
     Unwraps things like 'ROOT' and 'FRAG' until we get down to an NP by
     traversing the left spine.
@@ -308,7 +308,7 @@ def unwrapUntilNP(node):
         if len(node) == 0:
             return []
         else:
-            return unwrapUntilNP(node[0])
+            return unwrap_until_np(node[0])
 
 def is_label_in(node, label):
     """

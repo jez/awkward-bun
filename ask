@@ -175,7 +175,7 @@ def process_title(sp, st, raw_title):
     title_tagged = st.tag(raw_title.split())
 
     filtered = g.filter_tree(title_parsed, lambda node: node.label() != 'PRN')
-    article_title = g.unwrapUntilNP(filtered)
+    article_title = g.unwrap_until_np(filtered)
 
     result = {
         'article_title': article_title,
