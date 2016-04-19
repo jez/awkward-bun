@@ -2,9 +2,10 @@ from __future__ import print_function
 
 import sys
 import re
+import settings as s
 from nltk.tree import Tree
 
-LOG_ERRORS = False
+LOG_ERRORS = s.DEBUG
 
 def log_error(tree, message):
     if LOG_ERRORS:
@@ -30,6 +31,22 @@ def is_complete_sentence(root_node):
             len(root_node) == 1 and \
             root_node[0].label() == 'S'
 
+def is_binary_question(root_node):
+    """
+    Binary questions use SQ: (ROOT (SQ ...))
+    """
+    return root_node.label() == 'ROOT' and \
+            len(root_node) == 1 and \
+            root_node[0].label() == 'SQ'
+
+def is_factoid_question(root_node):
+    """
+    Factoid questions use SBARQ: (ROOT (SBARQ ...))
+    """
+    return root_node.label() == 'ROOT' and \
+            len(root_node) == 1 and \
+            root_node[0].label() == 'SBARQ'
+
 def is_simple_pred(root_node):
     """
     A simple predicate sentence is a complete sentence where the sentence is
@@ -51,15 +68,8 @@ def is_simple_pred(root_node):
 
 def get_sentence(root_node):
     """
-    Given a complete sentence like (ROOT (S ...)), returns the nested (S ...).
-
-    In symbols:
-
-        (ROOT
-          (S             <-- returns this node
-            (NP ...)
-            (VP ...)
-            (. .)))
+    Given a complete sentence like (ROOT (S ...)) or (ROOT (SQ ...)), returns
+    the nested (S ...) or (SQ ...).
     """
     return root_node[0]
 
@@ -91,6 +101,37 @@ def get_predicate(root_node):
     """
     return get_sentence(root_node)[1]
 
+def partition_sq(sq):
+    """
+    Takes an SQ node (i.e., the first thing under ROOT of something for which
+    is_binary_question returns true.
+
+    Returns a tuple (subject, verbs, tail), where:
+        - subject is the first NP under the SQ
+        - verbs is all nodes for which is_verb returns true
+        - tail is everything else
+    """
+    found_first_np = False
+    subject = None
+    verbs = []
+    tail = []
+
+    for node in sq:
+        # Treat the first NP as the subject
+        if not found_first_np and node.label() == 'NP':
+            found_first_np = True
+            subject = node
+
+        # Collect all the verb nodes
+        elif is_verb(node):
+            verbs.append(node)
+
+        # Dump all the rest of the stuff into a bucket
+        else:
+            tail.append(node)
+
+    return (subject, verbs, tail)
+
 
 # ----- Node label helpers ---------------------------------------------------
 
@@ -115,6 +156,19 @@ def is_prp(node):
     This function only checks whether a node's tag is "PRP".
     """
     return node.label() == 'PRP'
+
+def is_sq(node):
+    """
+    Is this an SQ node?
+    """
+    return node.label() == 'SQ'
+
+def is_wh_phrase(node):
+    """
+    There are a number of phrase types that start SBARQ (i.e. WH-question)
+    phrases, like WHNP, WHADJP, WHAVP, and WHPP
+    """
+    return node.label()[:2] == 'WH'
 
 def is_heshehishers(node):
     """
@@ -156,7 +210,8 @@ def is_leaf(node):
     For us "leaf" nodes are the nltk.tree.Tree objects that contain no Tree
     objects in their children.
     """
-    return all([not isinstance(child, Tree) for child in node])
+    return isinstance(node, Tree) and \
+            all([not isinstance(child, Tree) for child in node])
 
 def tree_any(tree, f):
     """
@@ -189,6 +244,18 @@ def filter_tree(node, f):
         else:
             return None
 
+def leaves(node):
+    """
+    Retur a list where the elements are all the leaves of the input node
+    according to is_leaf
+    """
+    if is_leaf(node):
+        return [node]
+    else:
+        children = []
+        for child in node:
+            children += leaves(child)
+        return children
 
 def replace_leftmost(node, f, replacer):
     """
@@ -328,3 +395,8 @@ def downcase(node, pos=None):
             return Tree(node.label(),
                     [downcase(left_child, pos=node.label())] + node[1:])
 
+def as_sentence(node):
+    """
+    Takes a node, calls as_string on it, and converts '?' to '.'
+    """
+    return re.sub(r'\?', '.', as_string(node))
