@@ -14,16 +14,37 @@ num_sentences = 5
 
 start_time = time.time()
 def generate_query(text):
-    query_tree = answer_finding.parser.raw_parse(text).next()
-    return query_tree
+    try:
+        query_tree = answer_finding.parser.raw_parse(text).next()
+        return query_tree
+    except:
+        return None
+
+def wrapper_norm(x):
+    try:
+        return normalize.normalize(x)
+    except:
+        return None
+
+def scoring_wrapper(f, x, n):
+    try:
+        return f(x,n)
+    except:
+        return None
+
+def select_wrapper(s, q, t):
+    try:
+        return answer_finding.select_answer(s,q,t)
+    except:
+        return u" "
 
 with codecs.open(query_name, encoding="utf-8", errors='ignore') as query_f:
     queries = query_f.readlines()
 scoring_function = tfidf.tfidf(article_name)
-query_trees = map(lambda q: normalize.normalize(generate_query(q)), queries)
-sentences_lists = map(lambda x: scoring_function(x, num_sentences), queries)
+query_trees = map(lambda q: wrapper_norm(generate_query(q)), queries)
+sentences_lists = map(lambda x: scoring_wrapper(scoring_function, x, num_sentences), queries)
 
-results = map(lambda (sents, query): answer_finding.select_answer(sents, query, start_time), zip(sentences_lists, query_trees))
+results = map(lambda (sents, query): select_wrapper(sents, query, start_time), zip(sentences_lists, query_trees))
 
 
 for i in results:

@@ -145,6 +145,7 @@ def filter_sbar(trees):
 
 def select_answer(sentences, query, start_time):
 #    print sentences
+    if not query or not sentences: return u" "
     time_left = total_time - (time.time()-start_time)
     if time_left < 10.0:
         return sentences[0] 
