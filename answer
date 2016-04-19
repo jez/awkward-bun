@@ -3,7 +3,6 @@ import time
 import sys
 import tfidf
 import answer_finding
-import question_classification
 import grammar_util    
 import normalize
 import codecs
