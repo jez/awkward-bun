@@ -28,3 +28,12 @@ Is the cat eating?
 Is the cat big?
 Is the cat big, despite being orange?
 
+# Testing question words
+Who is it?
+Whose is it?
+What is it?
+Which is it?
+Where is it?
+When is it?
+Why is it?
+How is it?
