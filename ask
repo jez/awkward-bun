@@ -235,7 +235,7 @@ def main(article_name, nquestions):
 
     for score, question, sentence in bests.queue:
         util.log('[%0.2f] %s' % (score, g.as_string(question)))
-        util.output(g.as_string(question))
+        util.output(g.as_string(question).encode('utf-8'))
 
 
 if __name__ == '__main__':
