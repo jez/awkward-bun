@@ -44,6 +44,7 @@ def disambiguateWith(sense, subject, replacements):
 
 
 def try_make_binary_question(node, article_title, sense):
+    # Filter parentheticals, because these usually don't make for good questions
     node_new = g.filter_tree(node, lambda n: n.label() != 'PRN')
     if not g.is_simple_pred(node_new):
         node_no_prn = node
