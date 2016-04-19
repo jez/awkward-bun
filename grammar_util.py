@@ -333,9 +333,9 @@ def replace_wh_phrase(whp):
     # Get new list of children (terminal or non-terminal)
     if is_leaf(whp):
         word_mapping = {
-            'who':    'he',
+            'who':    'Richard',   # random personal pronoun
             'whose':  'his',
-            'what':   'it',
+            'what':   'penguin',   # random noun
             'which':  'that',
             'where':  'here',
             'when':   'now',

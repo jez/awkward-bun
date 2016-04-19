@@ -21,6 +21,7 @@ from pattern.en import conjugate
 # Return status types: possible values returned from normalize
 BINARY = 's-BINARY'
 FACTOID = 's-FACTOID'
+SENTENCE = 's-SENTENCE'
 NOSUBJECT = 'f-NOSUBJECT'
 UNKNOWN = 'f-UNKNOWN'
 
@@ -36,8 +37,11 @@ def flatten(l):
 def normalize_binary(root, extras=[]):
     sq = g.get_sentence(root)
     (subject, verb_nodes, tail) = g.partition_sq(sq)
+
+    # Sometimes the root we get is from a factoid SQ, which means the subject
+    # is outside in a WH-phrase. Let's let them know, so they can handle it.
     if subject is None:
-        return (NOSUBJECT, [])
+        return (NOSUBJECT, [g.as_sentence(root)])
 
     # list of Trees (which are lists). To access the string contents of the
     # i'th element, use verb_leaves[i][0]
@@ -70,14 +74,21 @@ def normalize_factoid(root):
     sq_root = Tree('ROOT', [sq])
 
     whp = next(child for child in sbarq if g.is_wh_phrase(child))
-    # TODO(jez): convert wh-phrase to correct phrase type
+    non_whp = g.replace_wh_phrase(whp)
 
-    (qtype, sentences) = normalize_binary(sq_root, extras=[whp])
-
-    return (FACTOID, sentences)
+    (qtype, sentences) = normalize_binary(sq_root, extras=[non_whp])
+    if qtype == NOSUBJECT:
+        # The subject must be in the wh-phrase, because it definitely
+        # wasn't in the nested SQ, so we can just replace and move on
+        return (FACTOID, [g.as_sentence(g.replace_wh_phrase(root))])
+    else:
+        # The '?' gets truncated when we dive into the nested SQ,
+        # so let's add it back manually
+        return (FACTOID, [sent + '.' for sent in sentences])
 
 def normalize_sentence(root):
-    return (UNKNOWN, [g.as_sentence(root)])
+    non_whp = g.replace_wh_phrase(root)
+    return (SENTENCE, [g.as_sentence(non_whp)])
 
 def normalize(root):
     """
