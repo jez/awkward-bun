@@ -1,4 +1,3 @@
-What eats Jake?
 # WHNP is NP
 What is the earliest form of english called?
 What is Jake?
@@ -37,3 +36,19 @@ Where is it?
 When is it?
 Why is it?
 How is it?
+
+# Negations
+What is Jake not?
+What has the cat not eaten?
+What has the cat not been eating?
+What has the cat not been eating all day?
+What did the cat not eat?
+What did the cat not eat yesterday?
+What can the cat not eat?
+What does not eat Jake?
+Jake does not eat what?
+What is not awesome?
+Did the cat not eat?
+Is the cat not eating?
+Is the cat not big?
+Is the cat not big, despite being orange?

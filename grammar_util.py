@@ -5,6 +5,8 @@ import re
 import settings as s
 from nltk.tree import Tree
 
+from pattern.en import conjugate
+
 LOG_ERRORS = s.DEBUG
 
 def log_error(tree, message):
@@ -351,6 +353,40 @@ def replace_wh_phrase(whp):
 
     return Tree(label, children)
 
+def negate_verb_leaves(leaf_nodes):
+    """
+    Takes a list of leaf nodes and tries to negate it by searching for "not"
+
+    TODO: This code could be cleaner. It's repeated all over the place.
+    """
+    idx = None
+    for i in xrange(len(leaf_nodes)):
+        leaf = leaf_nodes[i]
+        # We have to call is_leaf because sometimes we have
+        # non-verb nodes treated as leaves
+        if is_leaf(leaf) and leaf.label() == 'RB' and leaf[0].lower() == 'not':
+            idx = i
+            break
+
+    if idx:
+        negative = leaf_nodes
+        positive = leaf_nodes[:idx] + leaf_nodes[idx+1:]
+    else:
+        positive = leaf_nodes
+        if len(leaf_nodes) == 1 and conjugate(leaf_nodes[0][0], 'VB') != 'be':
+            pos = leaf_nodes[0].label()
+            negative = [
+                Tree(pos, [conjugate('do', pos)]),
+                Tree('RB', ['not']),
+                Tree('VB', [conjugate(leaf_nodes[0], 'VB')])
+            ]
+        else:
+            negative = [leaf_nodes[0], Tree('RB', ['not'])] + leaf_nodes[1:]
+
+    return (positive, negative)
+
+
+
 def is_label_in(node, label):
     """
     Searches the immediate children of a node for a certain label, returning
@@ -365,7 +401,7 @@ def find_label_in(node, label):
     """
     for i in xrange(len(node)):
         child = node[i]
-        if (child.label() == label):
+        if child.label() == label:
             return i
     return None
 

@@ -55,23 +55,33 @@ def normalize_binary(root, extras=[]):
     verb_leaves = [leaf for leaf in leaf_nodes if g.is_verb(leaf)]
     non_verb_leaves = [leaf for leaf in leaf_nodes if not g.is_verb(leaf)]
 
+    (positive_vp, negative_vp) = g.negate_verb_leaves(verb_leaves)
+
     # Check to see if we have to collapse things like 'does eat' to 'eats'
-    if len(verb_leaves) > 1 and conjugate(verb_leaves[0][0], 'VB') == 'do':
+    if len(positive_vp) > 1 and conjugate(positive_vp[0][0], 'VB') == 'do':
         # Grab the second verb and conjugate it according
         # to the POS of the 'do' verb
-        pos = verb_leaves[0].label()
-        verbs = [Tree(pos, [conjugate(verb_leaves[1][0], pos)])] + verb_leaves[2:]
-    else:
-        verbs = verb_leaves
+        pos = positive_vp[0].label()
+        positive_vp = [Tree(pos, [conjugate(positive_vp[1][0], pos)])] + positive_vp[2:]
+
+    sentences = []
+    sentences.append(Tree('S',
+            [g.upcase(subject), g.downcase(Tree('VP', positive_vp))] +
+            extras + non_verb_leaves + tail))
+    sentences.append(Tree('S',
+            [g.upcase(subject), g.downcase(Tree('VP', negative_vp))] +
+            extras + non_verb_leaves + tail))
 
     # TODO(jez): handle the WHNP/NP + 'be' case
-    # TODO(jez): negate the question
+    if len(positive_vp) == 1 and conjugate(positive_vp[0][0], 'VB') == 'is':
+        # positive reverse
+        sentences.append(Tree('S', extras + non_verb_leaves + tail +
+            [g.downcase(Tree('VP', positive_vp)), g.upcase(subject)]))
+        # negative reverse
+        sentences.append(Tree('S', extras + non_verb_leaves + tail +
+            [g.downcase(Tree('VP', negative_vp)), g.upcase(subject)]))
 
-    new_sentence = Tree('S',
-            [g.upcase(subject), g.downcase(Tree('VP', verbs))] +
-            extras + non_verb_leaves + tail)
-
-    return (BINARY, [g.as_sentence(new_sentence)])
+    return (BINARY, [g.as_sentence(sent) for sent in sentences])
 
 
 def normalize_factoid(root):
@@ -81,10 +91,13 @@ def normalize_factoid(root):
     sq = next(child for child in sbarq if g.is_sq(child))
     sq_root = Tree('ROOT', [sq])
 
-    whp = next(child for child in sbarq if g.is_wh_phrase(child))
-    non_whp = g.replace_wh_phrase(whp)
+    try:
+        whp = next(child for child in sbarq if g.is_wh_phrase(child))
+        non_whp = [g.replace_wh_phrase(whp)]
+    except StopIteration:
+        non_whp = []
 
-    (qtype, sentences) = normalize_binary(sq_root, extras=[non_whp])
+    (qtype, sentences) = normalize_binary(sq_root, extras=non_whp)
     if qtype == NOSUBJECT:
         # The subject must be in the wh-phrase, because it definitely
         # wasn't in the nested SQ, so we can just replace and move on
