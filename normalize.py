@@ -43,9 +43,17 @@ def normalize_binary(root, extras=[]):
     if subject is None:
         return (NOSUBJECT, [g.as_sentence(root)])
 
+    # Treat non-verb nodes as leaves
+    def leaf_fn(node):
+        return g.is_leaf(node) or not g.is_verb(node)
+
     # list of Trees (which are lists). To access the string contents of the
     # i'th element, use verb_leaves[i][0]
-    verb_leaves = flatten([g.leaves(verb_node) for verb_node in verb_nodes])
+    leaf_nodes = flatten([g.leaves(verb_node, leaf_fn=leaf_fn) \
+            for verb_node in verb_nodes])
+
+    verb_leaves = [leaf for leaf in leaf_nodes if g.is_verb(leaf)]
+    non_verb_leaves = [leaf for leaf in leaf_nodes if not g.is_verb(leaf)]
 
     # Check to see if we have to collapse things like 'does eat' to 'eats'
     if len(verb_leaves) > 1 and conjugate(verb_leaves[0][0], 'VB') == 'do':
@@ -58,10 +66,10 @@ def normalize_binary(root, extras=[]):
 
     # TODO(jez): handle the WHNP/NP + 'be' case
     # TODO(jez): negate the question
-    # TODO(jez): correct where 'extras' is inserted (go into the VP)
 
     new_sentence = Tree('S',
-            [g.upcase(subject), g.downcase(Tree('VP', verbs))] + extras + tail)
+            [g.upcase(subject), g.downcase(Tree('VP', verbs))] +
+            extras + non_verb_leaves + tail)
 
     return (BINARY, [g.as_sentence(new_sentence)])
 

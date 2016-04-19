@@ -244,12 +244,12 @@ def filter_tree(node, f):
         else:
             return None
 
-def leaves(node):
+def leaves(node, leaf_fn=is_leaf):
     """
     Retur a list where the elements are all the leaves of the input node
     according to is_leaf
     """
-    if is_leaf(node):
+    if leaf_fn(node):
         return [node]
     else:
         children = []
