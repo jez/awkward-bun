@@ -1,1 +1,30 @@
+What eats Jake?
+# WHNP is NP
 What is the earliest form of english called?
+What is Jake?
+
+# Factoid questions
+What has the cat eaten?
+What has the cat been eating?
+What has the cat been eating all day?
+What did the cat eat?
+What did the cat eat yesterday?
+What can the cat eat?
+What eats Jake?
+To where is he going?
+
+# Subjunctive clause
+Althought the cat is orange, is the cat big?
+
+# S questions
+Jake eats what?
+
+# WHNP is x
+What is awesome?
+
+# Binary questions
+Did the cat eat?
+Is the cat eating?
+Is the cat big?
+Is the cat big, despite being orange?
+
