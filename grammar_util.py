@@ -310,6 +310,47 @@ def unwrap_until_np(node):
         else:
             return unwrap_until_np(node[0])
 
+def replace_wh_phrase(whp):
+    """
+    Replace the various POS tags that start with W or WH with a filler word of
+    their non-WH counterpart types. For example: Who -> Richard Fan
+    """
+    pos_mapping = {
+        'WHNP': 'NP',
+        'WHADJP': 'ADJP',
+        'WHAVP': 'WHAVP',
+        'WHPP': 'PP',
+        'WDT': 'DT',
+        'WP': 'PRP',
+        'WP$': 'PRP$',
+        'WRB': 'RB',
+    }
+    try:
+        label = pos_mapping[whp.label()]
+    except:
+        label = whp.label()
+
+    # Get new list of children (terminal or non-terminal)
+    if is_leaf(whp):
+        word_mapping = {
+            'who':    'he',
+            'whose':  'his',
+            'what':   'it',
+            'which':  'that',
+            'where':  'here',
+            'when':   'now',
+            'why':    'because',
+            'how':    'quite',
+        }
+        try:
+            children = [word_mapping[whp[0].lower()]]
+        except KeyError:
+            children = [whp[0].lower()]
+    else:
+        children = [replace_wh_phrase(child) for child in whp]
+
+    return Tree(label, children)
+
 def is_label_in(node, label):
     """
     Searches the immediate children of a node for a certain label, returning
