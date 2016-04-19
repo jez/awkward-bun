@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import time
 
 import settings
 
@@ -17,7 +17,7 @@ BINARY = normalize.BINARY
 FACTOID = normalize.FACTOID
 #NOSUBJECT = 'f-NOSUBJECT'
 UNKNOWN = normalize.UNKNOWN
-
+total_time = 300.00
 D = {}
 D_parse = {}
 
@@ -143,8 +143,11 @@ def filter_sbar(trees):
         result += filter_sbar_one(t)
     return result
 
-def select_answer(sentences, query):
+def select_answer(sentences, query, start_time):
 #    print sentences
+    time_left = total_time - (time.time()-start_time)
+    if time_left < 10.0:
+        return sentences[0] 
     parses = list(map(lambda x: x, raw_parse_sents(sentences)))
 
     (q_type, queries) = query
@@ -156,12 +159,15 @@ def select_answer(sentences, query):
         i.chomsky_normal_form()
     parses = filter_sbar(parses)       
     query_trees = map(generate_query, queries)
-
+    
     m = -float("inf")
     val = None
     for q in query_trees:
 #        q.pretty_print()
         for i in parses:
+            time_left = total_time - (time.time()-start_time)
+            if time_left < 5.0:
+	        return sentences[0] 
             i.chomsky_normal_form()
 #            i.pretty_print()
             (p,v) = match_tree(i,q)
@@ -169,6 +175,6 @@ def select_answer(sentences, query):
             if v > m:
 	        val = p
 	        m = v
-    return val
+    return grammar_util.as_string(val)
     
     
